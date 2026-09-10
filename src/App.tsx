@@ -130,12 +130,20 @@ export default function App() {
       await fetch('/api/send-tax-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leadInfo: lead,
-          taxYear: taxData.taxYear,
-          calculationResult,
-          isFamily: taxData.maritalStatus === 'married' && !!taxData.includeSpouseCalculation,
-        }),
+   body: JSON.stringify({
+  fullName: lead.fullName,
+  email: lead.email,
+  phone: lead.phone,
+  taxYear: taxData.taxYear,
+  totalIncome: calculationResult.totalIncome,
+  taxAlreadyPaid: calculationResult.taxAlreadyPaid,
+  taxLiabilityFinal: calculationResult.taxLiabilityFinal,
+  nominalRefund: calculationResult.nominalRefund,
+  finalRefundWithInterest: calculationResult.finalRefundWithInterest,
+  creditsSummary: calculationResult.creditsSummary,
+  isFamily: taxData.maritalStatus === 'married' && !!taxData.includeSpouseCalculation,
+}),
+    
       });
     } catch (err) {
       console.warn('Could not dispatch tax report email notification:', err);
