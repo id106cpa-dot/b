@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import nodemailer from "nodemailer";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
@@ -8,6 +9,13 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
+const mailTransporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
+});
 
 // Body parsing with support for large document payloads
 app.use(express.json({ limit: "25mb" }));
@@ -202,8 +210,27 @@ app.post("/api/send-tax-report", async (req, res) => {
     const businessEmail = "id106cpa@gmail.com";
     const timestamp = new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" });
 
-    console.log(`[TAX REPORT LEAD] ---------------------------------`);
-    console.log(`Time: ${timestamp}`);
+await mailTransporter.sendMail({
+  from: process.env.SMTP_USER,
+  to: businessEmail,
+  replyTo: email,
+  subject: `פנייה חדשה ממחשבון המס - ${fullName}`,
+  text: `
+שם מלא: ${fullName}
+אימייל: ${email}
+טלפון: ${phone}
+
+שנת מס: ${taxYear}
+סך הכנסות: ${totalIncome}
+מס ששולם: ${taxAlreadyPaid}
+חבות מס סופית: ${taxLiabilityFinal}
+החזר נומינלי: ${nominalRefund}
+החזר סופי כולל ריבית: ${finalRefundWithInterest}
+
+פירוט נקודות זיכוי:
+${creditsSummary}
+  `,
+});    console.log(`Time: ${timestamp}`);
     console.log(`Full Name: ${fullName}`);
     console.log(`Email: ${email}`);
     console.log(`Phone: ${phone}`);
