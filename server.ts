@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { createServer as createViteServer } from "vite";
 import dotenv from "dotenv";
 import { GoogleGenAI } from "@google/genai";
@@ -9,22 +9,9 @@ dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3000;
-const mailTransporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000,
-});
 
-mailTransporter.verify()
-  .then(() => console.log("Gmail SMTP connection successful"))
-  .catch((err) => console.error("Gmail SMTP connection failed:", err));
+const resend = new Resend(process.env.RESEND_API_KEY);
+
 
 // Body parsing with support for large document payloads
 app.use(express.json({ limit: "25mb" }));
@@ -219,12 +206,7 @@ app.post("/api/send-tax-report", async (req, res) => {
     const businessEmail = "id106cpa@gmail.com";
     const timestamp = new Date().toLocaleString("he-IL", { timeZone: "Asia/Jerusalem" });
 
-await mailTransporter.sendMail({
-  from: process.env.SMTP_USER,
-  to: businessEmail,
-  replyTo: email,
-  subject: `פנייה חדשה ממחשבון המס - ${fullName}`,
-  text: `
+const message = `
 שם מלא: ${fullName}
 אימייל: ${email}
 טלפון: ${phone}
@@ -238,34 +220,29 @@ await mailTransporter.sendMail({
 
 פירוט נקודות זיכוי:
 ${creditsSummary}
-  `,
-});    console.log(`Time: ${timestamp}`);
-    console.log(`Full Name: ${fullName}`);
-    console.log(`Email: ${email}`);
-    console.log(`Phone: ${phone}`);
-    console.log(`Tax Year: ${taxYear}`);
-    console.log(`Gross Income: ₪${totalIncome}`);
-    console.log(`Tax Already Paid: ₪${taxAlreadyPaid}`);
-    console.log(`Tax Liability: ₪${taxLiabilityFinal}`);
-    console.log(`Nominal Refund: ₪${nominalRefund}`);
-    console.log(`Final Refund (inc. interest): ₪${finalRefundWithInterest}`);
-    console.log(`Recipient 1 (Client): ${email}`);
-    console.log(`Recipient 2 (Business): ${businessEmail}`);
-    console.log(`--------------------------------------------------`);
+`;
 
-    // In this web environment, we log the dispatch and return success.
-    // If external SMTP credentials are provided in env, it could also send via nodemailer/resend.
-    return res.json({
-      success: true,
-      message: `דוח שומת המס נשלח בהצלחה לכתובת ${email} ועותק הועבר למייל המערכת (${businessEmail}).`,
-      data: {
-        fullName,
-        email,
-        phone,
-        taxYear,
-        dispatchedAt: timestamp,
-      },
-    });
+const { data, error } = await resend.emails.send({
+  from: "onboarding@resend.dev",
+  to: businessEmail,
+  replyTo: email,
+  subject: `פנייה חדשה ממחשבון המס - ${fullName}`,
+  text: message,
+});
+
+if (error) {
+  console.error("Resend error:", error);
+
+  return res.status(500).json({
+    success: false,
+    error: "שגיאה בשליחת המייל",
+    details: error.message,
+  });
+}
+
+console.log("Business email sent:", data?.id);
+
+
   } catch (err) {
     console.error("Error in send-tax-report:", err);
     res.status(500).json({ error: "שגיאה בשליחת הדוח במייל" });
