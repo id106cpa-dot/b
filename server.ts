@@ -17,6 +17,10 @@ const mailTransporter = nodemailer.createTransport({
   },
 });
 
+mailTransporter.verify()
+  .then(() => console.log("Gmail SMTP connection successful"))
+  .catch((err) => console.error("Gmail SMTP connection failed:", err));
+
 // Body parsing with support for large document payloads
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
