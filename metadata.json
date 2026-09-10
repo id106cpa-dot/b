@@ -1,0 +1,8 @@
+{
+  "name": "Remix מחשבון מס והחזר מס לשכיר",
+  "description": "מחשבון חכם ומקיף לבדיקת החזרי מס לשכירים בישראל לפי כללי רשות המסים עד 6 שנים אחורה, עם סריקת טופס 106 ומורה דרך מובנה.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
